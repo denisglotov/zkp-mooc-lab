@@ -147,7 +147,7 @@ template CheckBitLength(b) {
     signal input in;
     signal output out;
 
-    // TODO
+    out <-- !(in >> b);
 }
 
 /*
