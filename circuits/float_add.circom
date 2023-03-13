@@ -262,7 +262,17 @@ template LeftShift(shift_bound) {
     signal input skip_checks;
     signal output y;
 
-    // TODO
+    component less = LessThan(shift_bound);
+    less.in[0] <== shift;
+    less.in[1] <== shift_bound;
+
+    component junc = IfThenElse();
+    junc.cond <== skip_checks;
+    junc.R <== less.out;
+    junc.L <== 1;
+    junc.out === 1;
+
+    y <-- x << shift;
 }
 
 /*
