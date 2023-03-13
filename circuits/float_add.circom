@@ -292,6 +292,8 @@ template LeftShift(shift_bound) {
     junc.out === 1;
 
     y <-- x << shift;
+
+    // TODO: enforce y
 }
 
 /*
