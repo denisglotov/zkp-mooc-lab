@@ -359,5 +359,85 @@ template FloatAdd(k, p) {
     signal output e_out;
     signal output m_out;
 
-    // TODO
+    component checks[2];
+    for (var i = 0; i < 2; i++) {
+        checks[i] = CheckWellFormedness(k, p);
+        checks[i].e <== e[i];
+        checks[i].m <== m[i];
+    }
+
+    // arrange numbers in the order of their magnitude
+    component cmp = LessThan(k + p + 1);
+    for (var i = 0; i < 2; i++) {
+        cmp.in[i] <== m[i] + e[i] * (1 << (p + 1));
+    }
+
+    component e_junc = Switcher();
+    e_junc.sel <== cmp.out;
+    e_junc.L <== e[0];
+    e_junc.R <== e[1];
+
+    component m_junc = Switcher();
+    m_junc.sel <== cmp.out;
+    m_junc.L <== m[0];
+    m_junc.R <== m[1];
+
+    var alpha_m = m_junc.outL;
+    var alpha_e = e_junc.outL;
+    var beta_m = m_junc.outR;
+    var beta_e = e_junc.outR;
+
+    var diff_e = alpha_e - beta_e;
+    component diff_e_less = LessThan(k);
+    diff_e_less.in[0] <== p + 1;
+    diff_e_less.in[1] <== diff_e;
+
+    component alpha_e_zero = IsZero();
+    alpha_e_zero.in <== alpha_e;
+
+    component or_e = OR();
+    or_e.a <== diff_e_less.out;
+    or_e.b <== alpha_e_zero.out;
+
+    component junc_alpha_m = IfThenElse();
+    junc_alpha_m.cond <== or_e.out;
+    junc_alpha_m.L <== 1;
+    junc_alpha_m.R <== alpha_m;
+
+    component junc_diff = IfThenElse();
+    junc_diff.cond <== or_e.out;
+    junc_diff.L <== 0;
+    junc_diff.R <== diff_e;
+
+    component junc_beta_e = IfThenElse();
+    junc_beta_e.cond <== or_e.out;
+    junc_beta_e.L <== 1;
+    junc_beta_e.R <== beta_e;
+
+    component m_alpha_lsh = LeftShift(p + 2);
+    m_alpha_lsh.x <== junc_alpha_m.out;
+    m_alpha_lsh.shift <== junc_diff.out;
+    m_alpha_lsh.skip_checks <== 0;
+
+    component norm = Normalize(k, p, 2 * p + 1);
+    norm.e <== junc_beta_e.out;
+    norm.m <== m_alpha_lsh.y + beta_m;
+    norm.skip_checks <== 0;
+
+    component round = RoundAndCheck(k, p, 2 * p + 1);
+    round.e <== norm.e_out;
+    round.m <== norm.m_out;
+
+    component junc_m = IfThenElse();
+    junc_m.cond <== or_e.out;
+    junc_m.L <== alpha_m;
+    junc_m.R <== round.m_out;
+
+    component junc_e = IfThenElse();
+    junc_e.cond <== or_e.out;
+    junc_e.L <== alpha_e;
+    junc_e.R <== round.e_out;
+
+    e_out <== junc_e.out;
+    m_out <== junc_m.out;
 }
