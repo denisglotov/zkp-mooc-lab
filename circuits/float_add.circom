@@ -323,7 +323,27 @@ template Normalize(k, p, P) {
     signal output m_out;
     assert(P > p);
 
-    // TODO
+    component iszero = IsZero();
+    iszero.in <== m;
+    iszero.out === skip_checks;
+
+    component msnzb = MSNZB(P + 1);
+    msnzb.in <== m;
+    msnzb.skip_checks <== skip_checks;
+
+    signal parts[P + 2];
+    parts[0] <== 0;
+    for (var i = 0; i < P + 1; i++) {
+        parts[i + 1] <== parts[i] + i * msnzb.one_hot[i];
+    }
+    signal ell <== parts[P + 1];
+
+    component left_shift = LeftShift(P + 1);
+    left_shift.x <== m;
+    left_shift.shift <== P - ell;
+    left_shift.skip_checks <== skip_checks;
+    m_out <== left_shift.y;
+    e_out <== e + ell - p;
 }
 
 /*
