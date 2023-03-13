@@ -287,7 +287,25 @@ template MSNZB(b) {
     signal input skip_checks;
     signal output one_hot[b];
 
-    // TODO
+    component iszero = IsZero();
+    iszero.in <== in;
+    iszero.out === skip_checks;
+
+    component bits_in = Num2Bits(b);
+    bits_in.in <== in;
+
+    signal flags[b+1];
+    flags[0] <== 0;
+    component juncs[b];
+    for (var i = 0; i < b; i++) {
+        juncs[i] = IfThenElse();
+        juncs[i].cond <== flags[i];
+        juncs[i].L <== 1;
+        juncs[i].R <== bits_in.bits[b - i - 1];
+        flags[i + 1] <== juncs[i].out;
+
+        one_hot[b - i - 1] <== bits_in.bits[b - i - 1] * (1 - flags[i]);
+    }
 }
 
 /*
