@@ -147,7 +147,21 @@ template CheckBitLength(b) {
     signal input in;
     signal output out;
 
-    out <-- !(in >> b);
+    // Num2Bits(b) without assertion
+    signal output bits[b];
+    for (var i = 0; i < b; i++) {
+        bits[i] <-- (in >> i) & 1;
+        bits[i] * (1 - bits[i]) === 0;
+    }
+    var sum_of_bits = 0;
+    for (var i = 0; i < b; i++) {
+        sum_of_bits += (2 ** i) * bits[i];
+    }
+
+    component eq = IsEqual();
+    eq.in[0] <== in;
+    eq.in[1] <== sum_of_bits;
+    out <== eq.out;
 }
 
 /*
